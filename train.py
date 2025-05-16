@@ -7,7 +7,7 @@ from tensorflow.keras import layers, models, regularizers
 from sklearn.utils.class_weight import compute_class_weight
 
 # ==== 1. PARAMETERS ====
-DATASET_PATH = r"C:\\Users\\hp\\Desktop\\dataset___splited"
+DATASET_PATH = "C:\\Users\\hp\\Desktop\\dataset___splited"
 SAMPLE_RATE = 22050
 DURATION = 5
 SAMPLES_PER_TRACK = SAMPLE_RATE * DURATION

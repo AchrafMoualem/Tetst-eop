@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Identification Vocale</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background-color: #000;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Background Canvas */
+    #background-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    /* Main Container */
+    .container {
+      width: 100%;
+      max-width: 500px;
+      position: relative;
+      backdrop-filter: blur(8px);
+      background-color: rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
+      border: 1px solid rgba(0, 200, 255, 0.3);
+      padding: 24px;
+      box-shadow: 0 0 15px rgba(0, 200, 255, 0.3);
+    }
+
+    /* Icon Badge */
+    .icon-badge {
+      position: absolute;
+      top: -12px;
+      left: -12px;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22d3ee, #2563eb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+    }
+
+    .icon-badge svg {
+      width: 32px;
+      height: 32px;
+      color: white;
+    }
+
+    /* Heading */
+    h2 {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: white;
+      margin-top: 16px;
+      margin-bottom: 24px;
+      margin-left: 40px;
+    }
+
+    .heading-underline {
+      height: 4px;
+      width: 128px;
+      background: linear-gradient(to right, #22d3ee, #2563eb);
+      border-radius: 9999px;
+      margin: 8px auto 0;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(0, 200, 255, 0.2);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      color: #9ca3af;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .tab:hover {
+      color: #22d3ee;
+    }
+
+    .tab.active {
+      color: #22d3ee;
+    }
+
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(to right, #22d3ee, #2563eb);
+      border-radius: 9999px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    /* Form */
+    form {
+      margin-top: 24px;
+    }
+
+    .file-upload {
+      position: relative;
+      border: 2px dashed #4b5563;
+      border-radius: 8px;
+      padding: 24px;
+      transition: all 0.3s;
+    }
+
+    .file-upload:hover {
+      border-color: #0891b2;
+      background-color: rgba(8, 145, 178, 0.1);
+    }
+
+    .file-upload.drag-active {
+      border-color: #22d3ee;
+      background-color: rgba(8, 145, 178, 0.2);
+    }
+
+    .file-upload input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .file-upload-content {
+      text-align: center;
+    }
+
+    .file-upload-icon {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 8px;
+      color: #22d3ee;
+    }
+
+    .file-name {
+      color: #d1d5db;
+      margin-bottom: 4px;
+    }
+
+    .file-hint {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    /* Recording */
+    .recording-container {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .record-button {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22d3ee, #2563eb);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(0, 200, 255, 0.3);
+      transition: all 0.3s;
+    }
+
+    .record-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(0, 200, 255, 0.5);
+    }
+
+    .record-button svg {
+      width: 32px;
+      height: 32px;
+      color: white;
+    }
+
+    .record-button.recording {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
+    }
+
+    .recording-status {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #d1d5db;
+    }
+
+    .recording-time {
+      font-size: 18px;
+      font-weight: bold;
+      color: #22d3ee;
+      margin-top: 8px;
+    }
+
+    /* Enhanced Recording Preview */
+    #recording-preview {
+      margin-top: 24px;
+      animation: fadeIn 0.5s ease-in-out;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(0, 200, 255, 0.3);
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0, 200, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #recording-preview::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(0, 200, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+      z-index: -1;
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .preview-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #22d3ee;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preview-duration {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+
+    /* Custom Audio Player */
+    .audio-player {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .waveform-container {
+      height: 60px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .waveform-container::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, 
+        rgba(0, 0, 0, 0.3) 0%, 
+        rgba(0, 0, 0, 0) 5%, 
+        rgba(0, 0, 0, 0) 95%, 
+        rgba(0, 0, 0, 0.3) 100%
+      );
+      pointer-events: none;
+    }
+
+    .waveform {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .waveform-bar {
+      width: 3px;
+      height: 100%;
+      background: linear-gradient(to bottom, rgba(0, 200, 255, 0.2), rgba(0, 200, 255, 0.8) 50%, rgba(0, 200, 255, 0.2));
+      margin: 0 1px;
+      transform-origin: center;
+      animation: waveform-idle 1s ease-in-out infinite;
+    }
+
+    @keyframes waveform-idle {
+      0%, 100% {
+        height: 30%;
+      }
+      50% {
+        height: 60%;
+      }
+    }
+
+    .player-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .play-button {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22d3ee, #2563eb);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 200, 255, 0.3);
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .play-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+    }
+
+    .play-button svg {
+      width: 18px;
+      height: 18px;
+      color: white;
+    }
+
+    .progress-container {
+      flex-grow: 1;
+      height: 6px;
+      background: rgba(75, 85, 99, 0.5);
+      border-radius: 3px;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(to right, #22d3ee, #2563eb);
+      width: 0;
+      border-radius: 3px;
+      position: relative;
+    }
+
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: 6px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 3px;
+      transform: translateX(3px);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .progress-container:hover .progress-bar::after {
+      opacity: 1;
+    }
+
+    .time-display {
+      font-size: 12px;
+      color: #9ca3af;
+      min-width: 70px;
+      text-align: right;
+    }
+
+    /* Recording Controls */
+    .recording-controls {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .recording-action {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+
+    .recording-action.primary {
+      background: linear-gradient(to right, #06b6d4, #2563eb);
+      color: white;
+      border: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .recording-action.primary::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0) 0%, 
+        rgba(255, 255, 255, 0.2) 50%, 
+        rgba(255, 255, 255, 0) 100%
+      );
+      transition: all 0.5s;
+    }
+
+    .recording-action.primary:hover {
+      box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+    }
+
+    .recording-action.primary:hover::before {
+      left: 100%;
+    }
+
+    .recording-action.secondary {
+      background: rgba(75, 85, 99, 0.2);
+      color: #d1d5db;
+      border: 1px solid rgba(75, 85, 99, 0.5);
+    }
+
+    .recording-action.secondary:hover {
+      background: rgba(75, 85, 99, 0.3);
+      border-color: rgba(0, 200, 255, 0.3);
+    }
+
+    .recording-action svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Live Visualizer */
+    #live-visualizer {
+      width: 100%;
+      height: 60px;
+      margin-top: 16px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    /* Audio Visualizer */
+    .visualizer-container {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 8px;
+      background-color: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(0, 200, 255, 0.3);
+    }
+
+    .visualizer-label {
+      color: #22d3ee;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    #audio-visualizer {
+      width: 100%;
+      height: 64px;
+      border-radius: 4px;
+    }
+
+    /* Button */
+    button {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+      margin-top: 16px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:disabled {
+      background-color: #374151;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    button:not(:disabled) {
+      background: linear-gradient(to right, #06b6d4, #2563eb);
+      color: white;
+    }
+
+    button:not(:disabled):hover {
+      box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+    }
+
+    button .button-bg {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to right, #22d3ee, #3b82f6);
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 0;
+    }
+
+    button:not(:disabled):hover .button-bg {
+      opacity: 1;
+    }
+
+    button .button-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    /* Results */
+    .result-container {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 8px;
+      background-color: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(0, 200, 255, 0.3);
+      color: white;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .result-title {
+      font-size: 18px;
+      font-weight: 500;
+      color: #22d3ee;
+    }
+
+    .result-time {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .result-item {
+      margin-bottom: 16px;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .result-label {
+      color: #d1d5db;
+    }
+
+    .result-value {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .result-confidence {
+      margin-top: 4px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      background-color: #374151;
+      border-radius: 9999px;
+      height: 10px;
+      margin-top: 4px;
+    }
+
+    .progress-bar-inner {
+      background: linear-gradient(to right, #22d3ee, #2563eb);
+      height: 100%;
+      border-radius: 9999px;
+      width: 0;
+      animation: expandWidth 1s ease-out forwards;
+    }
+
+    .probabilities-title {
+      color: #d1d5db;
+      margin-bottom: 8px;
+    }
+
+    .probability-item {
+      margin-bottom: 12px;
+    }
+
+    .probability-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+
+    .probability-label {
+      color: #9ca3af;
+    }
+
+    .probability-value {
+      color: white;
+    }
+
+    .probability-bar {
+      width: 100%;
+      background-color: #374151;
+      border-radius: 9999px;
+      height: 6px;
+      margin-top: 4px;
+    }
+
+    .probability-bar-inner {
+      background: linear-gradient(to right, #22d3ee, #2563eb);
+      height: 100%;
+      border-radius: 9999px;
+      width: 0;
+    }
+
+    .error-message {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #f87171;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes expandWidth {
+      from {
+        width: 0;
+      }
+      to {
+        width: var(--width, 100%);
+      }
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 200, 255, 0.5);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 200, 255, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="background-canvas"></canvas>
+
+  <div class="container">
+    <div class="icon-badge">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" x2="12" y1="19" y2="22"></line>
+      </svg>
+    </div>
+
+    <h2>
+      Identification de Locuteur
+      <div class="heading-underline"></div>
+    </h2>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="upload">Importer un fichier</div>
+      <div class="tab" data-tab="record">Enregistrer</div>
+    </div>
+
+    <div id="upload-tab" class="tab-content active">
+      <form id="uploadForm">
+        <div id="file-upload" class="file-upload">
+          <input type="file" name="audio" id="audio" accept=".wav" required />
+          <div class="file-upload-content">
+            <svg class="file-upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+              <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+            </svg>
+            <p id="file-name" class="file-name">Déposez votre fichier audio ici</p>
+            <p class="file-hint">ou cliquez pour sélectionner un fichier .wav</p>
+          </div>
+        </div>
+
+        <button type="submit" id="analyze-button" disabled>
+          <span class="button-bg"></span>
+          <span class="button-content">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            Analyser la voix
+          </span>
+        </button>
+      </form>
+    </div>
+
+    <div id="record-tab" class="tab-content">
+      <div class="recording-container">
+        <button id="record-button" class="record-button">
+          <svg id="record-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="6"></circle>
+          </svg>
+        </button>
+        <p id="recording-status" class="recording-status">Appuyez pour commencer l'enregistrement</p>
+        <p id="recording-time" class="recording-time" style="display: none;">00:00</p>
+        <canvas id="live-visualizer" style="display: none;"></canvas>
+        
+        <div id="recording-preview" style="display: none;">
+          <div class="preview-header">
+            <div class="preview-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" x2="12" y1="19" y2="22"></line>
+              </svg>
+              Enregistrement
+            </div>
+            <div id="preview-duration" class="preview-duration">00:00</div>
+          </div>
+          
+          <div class="audio-player">
+            <div class="waveform-container">
+              <div id="waveform" class="waveform">
+                <!-- Waveform bars will be generated by JavaScript -->
+              </div>
+            </div>
+            
+            <div class="player-controls">
+              <button id="play-button" class="play-button">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+              </button>
+              
+              <div id="progress-container" class="progress-container">
+                <div id="progress-bar" class="progress-bar"></div>
+              </div>
+              
+              <div id="time-display" class="time-display">00:00 / 00:00</div>
+            </div>
+            
+            <audio id="audio-preview" style="display: none;"></audio>
+          </div>
+          
+          <div class="recording-controls">
+            <button id="reject-recording" class="recording-action secondary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+              Rejeter
+            </button>
+            <button id="submit-recording" class="recording-action primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Analyser
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="visualizer-container" class="visualizer-container" style="display: none;">
+      <p class="visualizer-label">Analyse audio en cours...</p>
+      <canvas id="audio-visualizer"></canvas>
+    </div>
+
+    <div id="result-container" class="result-container" style="display: none;"></div>
+  </div>
+
+  <script>
+    // Background animation
+    (function setupBackgroundAnimation() {
+      const canvas = document.getElementById('background-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      const particles = [];
+      for (let i = 0; i < 50; i++) {
+        const radius = Math.random() * 2 + 0.5;
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius,
+          color: `rgba(0, ${Math.floor(Math.random() * 150 + 100)}, ${Math.floor(Math.random() * 150 + 100)}, ${Math.random() * 0.5 + 0.1})`,
+          velocity: {
+            x: (Math.random() - 0.5) * 0.5,
+            y: (Math.random() - 0.5) * 0.5
+          }
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        particles.forEach(particle => {
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+          ctx.fillStyle = particle.color;
+          ctx.fill();
+
+          particle.x += particle.velocity.x;
+          particle.y += particle.velocity.y;
+
+          if (particle.x < 0 || particle.x > canvas.width) {
+            particle.velocity.x = -particle.velocity.x;
+          }
+
+          if (particle.y < 0 || particle.y > canvas.height) {
+            particle.velocity.y = -particle.velocity.y;
+          }
+        });
+
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+    })();
+
+    // Tab switching
+    (function setupTabs() {
+      const tabs = document.querySelectorAll('.tab');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const tabId = tab.getAttribute('data-tab');
+          
+          // Update active tab
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          
+          // Show active content
+          document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+          document.getElementById(`${tabId}-tab`).classList.add('active');
+        });
+      });
+    })();
+
+    // File upload handling
+    (function setupFileUpload() {
+      const fileUpload = document.getElementById('file-upload');
+      const fileInput = document.getElementById('audio');
+      const fileName = document.getElementById('file-name');
+      const analyzeButton = document.getElementById('analyze-button');
+      
+      fileInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+          fileName.textContent = e.target.files[0].name;
+          analyzeButton.disabled = false;
+        }
+      });
+
+      // Drag and drop functionality
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        fileUpload.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        fileUpload.addEventListener(eventName, highlight, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        fileUpload.addEventListener(eventName, unhighlight, false);
+      });
+
+      function highlight() {
+        fileUpload.classList.add('drag-active');
+      }
+
+      function unhighlight() {
+        fileUpload.classList.remove('drag-active');
+      }
+
+      fileUpload.addEventListener('drop', handleDrop, false);
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files && files[0]) {
+          fileInput.files = files;
+          fileName.textContent = files[0].name;
+          analyzeButton.disabled = false;
+        }
+      }
+    })();
+
+    // Audio recording functionality
+    (function setupAudioRecording() {
+      const recordButton = document.getElementById('record-button');
+      const recordIcon = document.getElementById('record-icon');
+      const recordingStatus = document.getElementById('recording-status');
+      const recordingTime = document.getElementById('recording-time');
+      const liveVisualizer = document.getElementById('live-visualizer');
+      const recordingPreview = document.getElementById('recording-preview');
+      const audioPreview = document.getElementById('audio-preview');
+      const rejectRecording = document.getElementById('reject-recording');
+      const submitRecording = document.getElementById('submit-recording');
+      const previewDuration = document.getElementById('preview-duration');
+      const playButton = document.getElementById('play-button');
+      const progressBar = document.getElementById('progress-bar');
+      const progressContainer = document.getElementById('progress-container');
+      const timeDisplay = document.getElementById('time-display');
+      const waveformContainer = document.getElementById('waveform');
+      
+      let mediaRecorder;
+      let audioChunks = [];
+      let audioBlob;
+      let audioURL;
+      let startTime;
+      let timerInterval;
+      let audioContext;
+      let analyser;
+      let visualizerCanvas;
+      let visualizerCtx;
+      let animationFrame;
+      let recordingDuration = 0;
+      let isPlaying = false;
+      
+      // Generate waveform bars
+      function generateWaveform() {
+        waveformContainer.innerHTML = '';
+        const barCount = 40;
+        
+        for (let i = 0; i < barCount; i++) {
+          const bar = document.createElement('div');
+          bar.className = 'waveform-bar';
+          bar.style.height = `${20 + Math.random() * 60}%`;
+          bar.style.animationDelay = `${i * 0.05}s`;
+          waveformContainer.appendChild(bar);
+        }
+      }
+      
+      // Check if browser supports MediaRecorder
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        recordButton.addEventListener('click', toggleRecording);
+        rejectRecording.addEventListener('click', resetRecording);
+        submitRecording.addEventListener('click', analyzeRecording);
+        
+        // Custom audio player controls
+        playButton.addEventListener('click', togglePlay);
+        audioPreview.addEventListener('timeupdate', updateProgress);
+        audioPreview.addEventListener('loadedmetadata', setDuration);
+        progressContainer.addEventListener('click', seek);
+      } else {
+        recordingStatus.textContent = "Votre navigateur ne supporte pas l'enregistrement audio";
+        recordButton.disabled = true;
+      }
+      
+      function togglePlay() {
+        if (audioPreview.paused) {
+          audioPreview.play();
+          playButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          `;
+          isPlaying = true;
+          
+          // Animate waveform
+          const bars = document.querySelectorAll('.waveform-bar');
+          bars.forEach(bar => {
+            bar.style.animation = 'none';
+            bar.style.height = `${20 + Math.random() * 60}%`;
+            setTimeout(() => {
+              bar.style.animation = `waveform-idle 0.5s ease-in-out infinite`;
+              bar.style.animationDelay = `${Math.random() * 0.5}s`;
+            }, 10);
+          });
+        } else {
+          audioPreview.pause();
+          playButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          `;
+          isPlaying = false;
+          
+          // Pause waveform animation
+          const bars = document.querySelectorAll('.waveform-bar');
+          bars.forEach(bar => {
+            bar.style.animation = 'none';
+          });
+        }
+      }
+      
+      function updateProgress() {
+        const duration = audioPreview.duration;
+        const currentTime = audioPreview.currentTime;
+        const percentage = (currentTime / duration) * 100;
+        
+        progressBar.style.width = `${percentage}%`;
+        
+        const minutes = Math.floor(currentTime / 60).toString().padStart(2, '0');
+        const seconds = Math.floor(currentTime % 60).toString().padStart(2, '0');
+        
+        const totalMinutes = Math.floor(duration / 60).toString().padStart(2, '0');
+        const totalSeconds = Math.floor(duration % 60).toString().padStart(2, '0');
+        
+        timeDisplay.textContent = `${minutes}:${seconds} / ${totalMinutes}:${totalSeconds}`;
+        
+        // If audio ended, reset play button
+        if (currentTime >= duration) {
+          playButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          `;
+          isPlaying = false;
+          
+          // Reset waveform animation
+          const bars = document.querySelectorAll('.waveform-bar');
+          bars.forEach(bar => {
+            bar.style.animation = 'none';
+          });
+        }
+      }
+      
+      function setDuration() {
+        const duration = audioPreview.duration;
+        const minutes = Math.floor(duration / 60).toString().padStart(2, '0');
+        const seconds = Math.floor(duration % 60).toString().padStart(2, '0');
+        
+        previewDuration.textContent = `${minutes}:${seconds}`;
+        timeDisplay.textContent = `00:00 / ${minutes}:${seconds}`;
+      }
+      
+      function seek(e) {
+        const percent = e.offsetX / progressContainer.offsetWidth;
+        audioPreview.currentTime = percent * audioPreview.duration;
+        progressBar.style.width = `${percent * 100}%`;
+      }
+      
+      function toggleRecording() {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+          startRecording();
+        } else {
+          stopRecording();
+        }
+      }
+      
+      async function startRecording() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          
+          // Setup audio context for visualization
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const source = audioContext.createMediaStreamSource(stream);
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 256;
+          source.connect(analyser);
+          
+          // Setup visualizer
+          visualizerCanvas = document.getElementById('live-visualizer');
+          visualizerCtx = visualizerCanvas.getContext('2d');
+          visualizerCanvas.width = visualizerCanvas.offsetWidth;
+          visualizerCanvas.height = visualizerCanvas.offsetHeight;
+          visualizerCanvas.style.display = 'block';
+          
+          // Start visualization
+          visualize();
+          
+          // Setup media recorder
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+          
+          mediaRecorder.addEventListener('dataavailable', event => {
+            audioChunks.push(event.data);
+          });
+          
+          mediaRecorder.addEventListener('stop', () => {
+            audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            audioURL = URL.createObjectURL(audioBlob);
+            audioPreview.src = audioURL;
+            
+            // Generate waveform
+            generateWaveform();
+            
+            // Show preview controls
+            recordingPreview.style.display = 'block';
+            
+            // Set duration in preview header
+            const minutes = Math.floor(recordingDuration / 60).toString().padStart(2, '0');
+            const seconds = Math.floor(recordingDuration % 60).toString().padStart(2, '0');
+            previewDuration.textContent = `${minutes}:${seconds}`;
+            
+            // Stop visualization
+            cancelAnimationFrame(animationFrame);
+            
+            // Stop all tracks in the stream
+            stream.getTracks().forEach(track => track.stop());
+          });
+          
+          // Start recording
+          mediaRecorder.start();
+          
+          // Update UI
+          recordButton.classList.add('recording');
+          recordIcon.innerHTML = `
+            <rect x="6" y="6" width="12" height="12"></rect>
+          `;
+          recordingStatus.textContent = "Enregistrement en cours...";
+          recordingTime.style.display = 'block';
+          
+          // Start timer
+          startTime = Date.now();
+          recordingDuration = 0;
+          updateTimer();
+          timerInterval = setInterval(updateTimer, 1000);
+          
+        } catch (err) {
+          console.error('Error accessing microphone:', err);
+          recordingStatus.textContent = "Erreur d'accès au microphone: " + err.message;
+        }
+      }
+      
+      function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+          
+          // Update UI
+          recordButton.classList.remove('recording');
+          recordIcon.innerHTML = `
+            <circle cx="12" cy="12" r="6"></circle>
+          `;
+          recordingStatus.textContent = "Enregistrement terminé";
+          
+          // Stop timer
+          clearInterval(timerInterval);
+        }
+      }
+      
+      function resetRecording() {
+        // Reset UI
+        recordingPreview.style.display = 'none';
+        recordingTime.style.display = 'none';
+        liveVisualizer.style.display = 'none';
+        recordingStatus.textContent = "Appuyez pour commencer l'enregistrement";
+        
+        // Reset audio player
+        if (isPlaying) {
+          audioPreview.pause();
+          isPlaying = false;
+        }
+        
+        // Clear audio data
+        if (audioURL) {
+          URL.revokeObjectURL(audioURL);
+        }
+        audioChunks = [];
+        audioBlob = null;
+        audioURL = null;
+      }
+      
+      function updateTimer() {
+        recordingDuration = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(recordingDuration / 60).toString().padStart(2, '0');
+        const seconds = (recordingDuration % 60).toString().padStart(2, '0');
+        recordingTime.textContent = `${minutes}:${seconds}`;
+      }
+      
+      function visualize() {
+        if (!analyser) return;
+        
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        
+        const width = visualizerCanvas.width;
+        const height = visualizerCanvas.height;
+        
+        visualizerCtx.clearRect(0, 0, width, height);
+        
+        function draw() {
+          animationFrame = requestAnimationFrame(draw);
+          
+          analyser.getByteFrequencyData(dataArray);
+          
+          visualizerCtx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+          visualizerCtx.fillRect(0, 0, width, height);
+          
+          const barWidth = width / bufferLength * 2.5;
+          let x = 0;
+          
+          for (let i = 0; i < bufferLength; i++) {
+            const barHeight = dataArray[i] / 255 * height;
+            
+            const hue = 180 + (i / bufferLength) * 40;
+            visualizerCtx.fillStyle = `hsla(${hue}, 100%, 50%, 0.7)`;
+            
+            visualizerCtx.fillRect(x, height - barHeight, barWidth, barHeight);
+            
+            x += barWidth + 1;
+          }
+        }
+        
+        draw();
+      }
+      
+      function analyzeRecording() {
+        if (!audioBlob) return;
+        
+        // Create a File object from the Blob
+        const audioFile = new File([audioBlob], "recording.wav", { type: "audio/wav" });
+        
+        // Hide recording preview
+        recordingPreview.style.display = 'none';
+        
+        // Show visualizer
+        const visualizerContainer = document.getElementById('visualizer-container');
+        visualizerContainer.style.display = 'block';
+        setupAudioVisualizer();
+        
+        // Hide previous results
+        document.getElementById('result-container').style.display = 'none';
+        
+        // Simulate API call with a delay
+        setTimeout(async () => {
+          try {
+            // In a real app, you would send the audioFile to your API
+            // const formData = new FormData();
+            // formData.append('audio', audioFile);
+            // const response = await fetch('/predict', {
+            //   method: 'POST',
+            //   body: formData
+            // });
+            // const data = await response.json();
+            
+            // Mock data for demonstration
+            //const mockData = {
+              //predicted_label: "Locuteur 2",
+              //confidence: 0.92,
+              //probabilities: [0.03, 0.92, 0.04, 0.01]
+            //};
+            
+            //displayResults(mockData);
+            const formData = new FormData();
+            formData.append('audio', audioFile);
+
+            const response = await fetch('/predict', {
+            method: 'POST',
+            body: formData
+            });
+
+            const data = await response.json();
+            displayResults(data);
+
+          } catch (err) {
+            displayError(err.message || "Une erreur est survenue");
+          } finally {
+            // Hide visualizer
+            visualizerContainer.style.display = 'none';
+            
+            // Reset recording UI
+            resetRecording();
+          }
+        }, 2500);
+      }
+    })();
+
+    // Audio visualizer for analysis
+    function setupAudioVisualizer() {
+      const canvas = document.getElementById('audio-visualizer');
+      const ctx = canvas.getContext('2d');
+      
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      
+      const bars = 60;
+      const barWidth = canvas.width / bars;
+      
+      function animateAudioVisualizer() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        for (let i = 0; i < bars; i++) {
+          const height = Math.random() * canvas.height * 0.8;
+          const hue = 180 + Math.random() * 40;
+          
+          ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.7)`;
+          ctx.fillRect(i * barWidth, canvas.height - height, barWidth - 2, height);
+        }
+        
+        if (document.getElementById('visualizer-container').style.display !== 'none') {
+          requestAnimationFrame(animateAudioVisualizer);
+        }
+      }
+      
+      animateAudioVisualizer();
+    }
+
+    // Form submission and analysis
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const audioFile = document.getElementById('audio').files[0];
+      if (!audioFile) return;
+      
+      // Show visualizer
+      const visualizerContainer = document.getElementById('visualizer-container');
+      visualizerContainer.style.display = 'block';
+      setupAudioVisualizer();
+      
+      // Hide previous results
+      document.getElementById('result-container').style.display = 'none';
+      
+      // Update button to loading state
+      const analyzeButton = document.getElementById('analyze-button');
+      const buttonContent = analyzeButton.querySelector('.button-content');
+      const originalButtonHTML = buttonContent.innerHTML;
+      buttonContent.innerHTML = `
+        <svg class="spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+        </svg>
+        Analyse en cours...
+      `;
+      analyzeButton.disabled = true;
+      
+      // Simulate API call with a delay
+      try {
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        
+        // Mock response - in a real app, this would be the fetch call
+        // const formData = new FormData();
+        // formData.append('audio', audioFile);
+        // const response = await fetch('/predict', {
+        //   method: 'POST',
+        //   body: formData
+        // });
+        // const data = await response.json();
+        
+        // Mock data for demonstration
+        //const mockData = {
+          //predicted_label: "Locuteur 3",
+          //confidence: 0.87,
+          //probabilities: [0.05, 0.08, 0.87, 0.0]
+        //};
+        
+        //displayResults(mockData);
+        const formData = new FormData();
+        formData.append('audio', audioFile);
+
+        const response = await fetch('/predict', {
+        method: 'POST',
+        body: formData
+        });
+
+        const data = await response.json();
+        displayResults(data);
+
+      } catch (err) {
+        displayError(err.message || "Une erreur est survenue");
+      } finally {
+        // Hide visualizer
+        visualizerContainer.style.display = 'none';
+        
+        // Restore button
+        buttonContent.innerHTML = originalButtonHTML;
+        analyzeButton.disabled = false;
+      }
+    });
+
+    // Display results
+    function displayResults(data) {
+      const resultContainer = document.getElementById('result-container');
+      
+      if (data.error) {
+        displayError(data.error);
+        return;
+      }
+      
+      const currentTime = new Date().toLocaleTimeString();
+      
+      let html = `
+        <div class="result-header">
+          <h3 class="result-title">Résultats</h3>
+          <div class="result-time">${currentTime}</div>
+        </div>
+        
+        <div class="result-item">
+          <div class="result-row">
+            <span class="result-label">Prédiction:</span>
+            <span class="result-value">${data.predicted_label}</span>
+          </div>
+        </div>
+        
+        <div class="result-item result-confidence">
+          <div class="result-row">
+            <span class="result-label">Confiance:</span>
+            <span class="result-value">${(data.confidence * 100).toFixed(2)}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-bar-inner" style="--width: ${data.confidence * 100}%"></div>
+          </div>
+        </div>
+        
+        <div class="result-item">
+          <h4 class="probabilities-title">Probabilités:</h4>
+          <div class="probabilities-list">
+      `;
+      
+      data.probabilities.forEach((prob, i) => {
+        html += `
+          <div class="probability-item">
+            <div class="probability-row">
+              <span class="probability-label">Classe ${i}</span>
+              <span class="probability-value">${(prob * 100).toFixed(2)}%</span>
+            </div>
+            <div class="probability-bar">
+              <div class="probability-bar-inner" style="--width: ${prob * 100}%; animation-delay: ${i * 0.1}s"></div>
+            </div>
+          </div>
+        `;
+      });
+      
+      html += `
+          </div>
+        </div>
+      `;
+      
+      resultContainer.innerHTML = html;
+      resultContainer.style.display = 'block';
+      
+      // Animate progress bars
+      setTimeout(() => {
+        const bars = document.querySelectorAll('.probability-bar-inner');
+        bars.forEach((bar, i) => {
+          bar.style.animation = `expandWidth 1s ease-out ${i * 0.1}s forwards`;
+          bar.style.width = bar.style.getPropertyValue('--width');
+        });
+      }, 100);
+    }
+
+    // Display error
+    function displayError(errorMessage) {
+      const resultContainer = document.getElementById('result-container');
+      
+      resultContainer.innerHTML = `
+        <div class="error-message">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>Erreur : ${errorMessage}</span>
+        </div>
+      `;
+      
+      resultContainer.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
